@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>58.0</apiVersion>
+    <description>Fee Booking flow for maker activities</description>
+    <interviewLabel>Fee Booking {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Fee Booking Flow</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    
+    <!-- Get Current Activity -->
+    <recordLookups>
+        <name>Get_Current_Activity</name>
+        <label>Get Current Activity</label>
+        <locationX>176</locationX>
+        <locationY>158</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Fee_Booking_Screen</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Activity__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    
+    <!-- Fee Booking Screen with Radio Buttons -->
+    <screens>
+        <name>Fee_Booking_Screen</name>
+        <label>Fee Booking Screen</label>
+        <locationX>176</locationX>
+        <locationY>258</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <connector>
+            <targetReference>Update_Fee_Booking_Activity</targetReference>
+        </connector>
+        <fields>
+            <name>BookingHeader</name>
+            <fieldText>Select the appropriate status for fee booking:</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <fields>
+            <name>StatusSelection</name>
+            <choiceReferences>StatusOptions</choiceReferences>
+            <dataType>String</dataType>
+            <fieldText>Select Status</fieldText>
+            <fieldType>RadioButtons</fieldType>
+            <isRequired>true</isRequired>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    
+    <!-- Update Fee Booking Activity with Selected Status -->
+    <recordUpdates>
+        <name>Update_Fee_Booking_Activity</name>
+        <label>Update Fee Booking Activity</label>
+        <locationX>176</locationX>
+        <locationY>358</locationY>
+        <connector>
+            <targetReference>Get_Checker_Activity</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Status__c</field>
+            <value>
+                <elementReference>StatusSelection</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Activity__c</object>
+    </recordUpdates>
+    
+    <!-- Find the Related Checker Activity -->
+    <recordLookups>
+        <name>Get_Checker_Activity</name>
+        <label>Get Checker Activity</label>
+        <locationX>176</locationX>
+        <locationY>458</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Get_Checker_Queue</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Case__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Get_Current_Activity.Case__c</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>Activity_Type__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Collateral Fees</stringValue>
+            </value>
+        </filters>
+        <filters>
+            <field>Activity_Subtype__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Checking</stringValue>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Activity__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    
+    <!-- Get Checker Queue Dynamically by Name -->
+    <recordLookups>
+        <name>Get_Checker_Queue</name>
+        <label>Get Checker Queue</label>
+        <locationX>176</locationX>
+        <locationY>508</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Update_Checker_Activity</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Name</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Checker Queue</stringValue> <!-- Replace with your actual queue name -->
+            </value>
+        </filters>
+        <filters>
+            <field>Type</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Queue</stringValue>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Group</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    
+    <!-- Update Checker Activity - Set Status to Pending Assignment and Move to Queue -->
+    <recordUpdates>
+        <name>Update_Checker_Activity</name>
+        <label>Update Checker Activity</label>
+        <locationX>176</locationX>
+        <locationY>558</locationY>
+        <connector>
+            <targetReference>Confirmation_Screen</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Get_Checker_Activity.Id</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Status__c</field>
+            <value>
+                <stringValue>Pending Assignment</stringValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>OwnerId</field>
+            <value>
+                <elementReference>Get_Checker_Queue.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Activity__c</object>
+    </recordUpdates>
+    
+    <!-- Confirmation Screen -->
+    <screens>
+        <name>Confirmation_Screen</name>
+        <label>Confirmation Screen</label>
+        <locationX>176</locationX>
+        <locationY>658</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>ConfirmationMessage</name>
+            <fieldText>Fee booking activity marked as {!StatusSelection}. The checker activity has been moved to the checker queue with status "Pending Assignment".</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    
+    <!-- Status Options for Radio Buttons -->
+    <choices>
+        <name>StatusOptions</name>
+        <choiceText>Completed</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Completed</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>StatusOptions</name>
+        <choiceText>Not Applicable</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Not Applicable</stringValue>
+        </value>
+    </choices>
+    
+    <!-- Input Variables -->
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    
+    <start>
+        <locationX>50</locationX>
+        <locationY>50</locationY>
+        <connector>
+            <targetReference>Get_Current_Activity</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+</Flow>
