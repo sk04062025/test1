@@ -1,0 +1,15 @@
+<recordLookups>
+    <n>Get_Checker_Queue</n>
+    <label>Get Checker Queue</label>
+    <filterLogic>and</filterLogic>
+    <filters>
+        <field>Name</field>
+        <operator>EqualTo</operator>
+        <value>
+            <stringValue>Checker Queue</stringValue>
+        </value>
+    </filters>
+    <getFirstRecordOnly>true</getFirstRecordOnly>
+    <object>Group</object>
+    <storeOutputAutomatically>true</storeOutputAutomatically>
+</recordLookups>
