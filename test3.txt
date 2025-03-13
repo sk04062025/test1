@@ -1,0 +1,191 @@
+/**
+ * Alternative test class for FacilityCaseActivityController
+ * Uses data creation methods for better organization and clarity
+ */
+@isTest
+private class FacilityCaseActivityControllerTest {
+    
+    // Constants for test data
+    private static final String TERM_LOAN = 'Term Loan';
+    private static final String OVERDRAFT = 'Overdraft';
+    private static final String COLLATERAL_FEES = 'Collateral Fees';
+    
+    /**
+     * Test the checkExistingCollateralFees method
+     */
+    @isTest
+    static void testCheckExistingCollateralFees() {
+        // Create a facility case without activities
+        Facility_Case__c facilityWithoutActivities = createFacilityCase(TERM_LOAN);
+        
+        // Create a facility case with activities
+        Facility_Case__c facilityWithActivities = createFacilityCase(OVERDRAFT);
+        createActivity(facilityWithActivities.Id, 'Existing Activity', COLLATERAL_FEES, 1, 1);
+        
+        Test.startTest();
+        
+        // Test facility without activities
+        Boolean resultWithoutActivities = FacilityCaseActivityController.checkExistingCollateralFees(facilityWithoutActivities.Id);
+        
+        // Test facility with activities
+        Boolean resultWithActivities = FacilityCaseActivityController.checkExistingCollateralFees(facilityWithActivities.Id);
+        
+        Test.stopTest();
+        
+        // Verify results
+        System.assertEquals(false, resultWithoutActivities, 'Facility should not have existing activities');
+        System.assertEquals(true, resultWithActivities, 'Facility should have existing activities');
+    }
+    
+    /**
+     * Test creating activities using the direct approach
+     */
+    @isTest
+    static void testCreateTwoActivities() {
+        // Create a test facility case
+        Facility_Case__c testFacility = createFacilityCase(TERM_LOAN);
+        
+        Test.startTest();
+        
+        // Call the method to create activities
+        Boolean result = FacilityCaseActivityController.createTwoActivities(testFacility.Id);
+        
+        Test.stopTest();
+        
+        // Verify the result
+        System.assertEquals(true, result, 'Activity creation should return true');
+        
+        // Query for created activities
+        List<Activity__c> createdActivities = queryActivitiesForFacility(testFacility.Id);
+        
+        // Verify the activities were created correctly
+        System.assertEquals(2, createdActivities.size(), 'Two activities should have been created');
+        validateActivity(createdActivities[0], 'Fees Booking', COLLATERAL_FEES, 1);
+        validateActivity(createdActivities[1], 'Fees Checking', COLLATERAL_FEES, 2);
+    }
+    
+    /**
+     * Test creating activities using the metadata-based approach
+     */
+    @isTest
+    static void testCreateActivitiesFromMetadataEfficient() {
+        // Create a test facility case
+        Facility_Case__c testFacility = createFacilityCase(TERM_LOAN);
+        
+        Test.startTest();
+        
+        // Call the method to create activities from metadata
+        Boolean result = FacilityCaseActivityController.createActivitiesFromMetadataEfficient(
+            testFacility.Id, testFacility.Product_Type__c);
+        
+        Test.stopTest();
+        
+        // Verify the result
+        System.assertEquals(true, result, 'Activity creation should return true');
+        
+        // Query for created activities
+        List<Activity__c> createdActivities = queryActivitiesForFacility(testFacility.Id);
+        
+        // Verify activities were created (we can't know exactly how many due to metadata limitations in tests)
+        System.assertNotEquals(0, createdActivities.size(), 'Activities should have been created');
+    }
+    
+    /**
+     * Test error handling in the direct creation method
+     */
+    @isTest
+    static void testCreateTwoActivitiesError() {
+        Test.startTest();
+        
+        Exception caughtException = null;
+        try {
+            // Call with null ID to force an error
+            FacilityCaseActivityController.createTwoActivities(null);
+        } catch(AuraHandledException e) {
+            caughtException = e;
+        }
+        
+        Test.stopTest();
+        
+        // Verify exception was thrown and contains expected message
+        System.assertNotEquals(null, caughtException, 'An exception should have been thrown');
+        System.assert(caughtException.getMessage().contains('Error creating activities'), 
+                     'Exception should mention error creating activities');
+    }
+    
+    /**
+     * Test error handling in the metadata-based creation method
+     */
+    @isTest
+    static void testCreateActivitiesFromMetadataEfficientError() {
+        Test.startTest();
+        
+        Exception caughtException = null;
+        try {
+            // Call with null ID to force an error
+            FacilityCaseActivityController.createActivitiesFromMetadataEfficient(null, TERM_LOAN);
+        } catch(AuraHandledException e) {
+            caughtException = e;
+        }
+        
+        Test.stopTest();
+        
+        // Verify exception was thrown and contains expected message
+        System.assertNotEquals(null, caughtException, 'An exception should have been thrown');
+        System.assert(caughtException.getMessage().contains('Error creating activities'), 
+                     'Exception should mention error creating activities');
+    }
+    
+    //
+    // Helper methods for test data creation and verification
+    //
+    
+    /**
+     * Create a facility case with given product type
+     */
+    private static Facility_Case__c createFacilityCase(String productType) {
+        Facility_Case__c facility = new Facility_Case__c(
+            Product_Type__c = productType
+        );
+        insert facility;
+        return facility;
+    }
+    
+    /**
+     * Create an activity for a facility case
+     */
+    private static Activity__c createActivity(Id facilityId, String name, String activityType, 
+                                            Integer activitySequence, Integer activityTypeSequence) {
+        Activity__c activity = new Activity__c(
+            Name = name,
+            Activity_Type__c = activityType,
+            Activity_Sequence__c = activitySequence,
+            Activity_Type_Sequence__c = activityTypeSequence,
+            Facility_Case__c = facilityId
+        );
+        insert activity;
+        return activity;
+    }
+    
+    /**
+     * Query activities for a given facility case
+     */
+    private static List<Activity__c> queryActivitiesForFacility(Id facilityId) {
+        return [
+            SELECT Name, Activity_Type__c, Activity_Sequence__c, Activity_Type_Sequence__c
+            FROM Activity__c 
+            WHERE Facility_Case__c = :facilityId
+            ORDER BY Activity_Sequence__c ASC
+        ];
+    }
+    
+    /**
+     * Validate an activity has the expected properties
+     */
+    private static void validateActivity(Activity__c activity, String expectedName, 
+                                       String expectedType, Integer expectedSequence) {
+        System.assertEquals(expectedName, activity.Name, 'Activity name should match');
+        System.assertEquals(expectedType, activity.Activity_Type__c, 'Activity type should match');
+        System.assertEquals(expectedSequence, activity.Activity_Sequence__c, 'Activity sequence should match');
+    }
+}
