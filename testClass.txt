@@ -1,0 +1,146 @@
+/**
+ * Test class for FacilityCaseActivityController
+ */
+@isTest
+private class FacilityCaseActivityControllerTest {
+    
+    // Test setup data
+    @TestSetup
+    static void setupTestData() {
+        // Create test facility case
+        Facility_Case__c testFacility = new Facility_Case__c(
+            Name = 'Test Facility',
+            Product_Type__c = 'Term Loan'
+        );
+        insert testFacility;
+        
+        // Create test facility case with existing activities
+        Facility_Case__c facilityWithActivities = new Facility_Case__c(
+            Name = 'Facility With Activities',
+            Product_Type__c = 'Overdraft'
+        );
+        insert facilityWithActivities;
+        
+        // Create existing activities for this facility
+        Activity__c existingActivity = new Activity__c(
+            Name = 'Existing Activity',
+            Activity_Type__c = 'Collateral Fees',
+            Activity_Sequence__c = 1,
+            Activity_Type_Sequence__c = 1,
+            Facility_Case__c = facilityWithActivities.Id
+        );
+        insert existingActivity;
+    }
+    
+    /**
+     * Test checkExistingCollateralFees method
+     */
+    @isTest
+    static void testCheckExistingCollateralFees() {
+        // Get the test facility records
+        Facility_Case__c testFacility = [SELECT Id FROM Facility_Case__c WHERE Name = 'Test Facility' LIMIT 1];
+        Facility_Case__c facilityWithActivities = [SELECT Id FROM Facility_Case__c WHERE Name = 'Facility With Activities' LIMIT 1];
+        
+        Test.startTest();
+        
+        // Test facility without activities
+        Boolean noActivities = FacilityCaseActivityController.checkExistingCollateralFees(testFacility.Id);
+        System.assertEquals(false, noActivities, 'Facility should not have existing activities');
+        
+        // Test facility with activities
+        Boolean hasActivities = FacilityCaseActivityController.checkExistingCollateralFees(facilityWithActivities.Id);
+        System.assertEquals(true, hasActivities, 'Facility should have existing activities');
+        
+        Test.stopTest();
+    }
+    
+    /**
+     * Test createTwoActivities method
+     */
+    @isTest
+    static void testCreateTwoActivities() {
+        // Get the test facility
+        Facility_Case__c testFacility = [SELECT Id FROM Facility_Case__c WHERE Name = 'Test Facility' LIMIT 1];
+        
+        Test.startTest();
+        
+        // Create activities
+        Boolean result = FacilityCaseActivityController.createTwoActivities(testFacility.Id);
+        
+        Test.stopTest();
+        
+        // Verify result
+        System.assertEquals(true, result, 'Activity creation should succeed');
+        
+        // Verify activities were created
+        List<Activity__c> activities = [SELECT Name, Activity_Sequence__c FROM Activity__c WHERE Facility_Case__c = :testFacility.Id ORDER BY Activity_Sequence__c];
+        System.assertEquals(2, activities.size(), 'Two activities should have been created');
+        System.assertEquals('Fees Booking', activities[0].Name, 'First activity should be Fees Booking');
+        System.assertEquals('Fees Checking', activities[1].Name, 'Second activity should be Fees Checking');
+    }
+    
+    /**
+     * Test createActivitiesFromMetadataEfficient method
+     * Note: This test will use hardcoded values since Custom Metadata Types
+     * cannot be created in test methods
+     */
+    @isTest
+    static void testCreateActivitiesFromMetadataEfficient() {
+        // Get the test facility
+        Facility_Case__c testFacility = [SELECT Id, Product_Type__c FROM Facility_Case__c WHERE Name = 'Test Facility' LIMIT 1];
+        
+        Test.startTest();
+        
+        // Create activities using the metadata-based method
+        Boolean result = FacilityCaseActivityController.createActivitiesFromMetadataEfficient(testFacility.Id, testFacility.Product_Type__c);
+        
+        Test.stopTest();
+        
+        // Verify result
+        System.assertEquals(true, result, 'Activity creation should succeed');
+        
+        // Verify activities were created
+        // Note: Since we can't create Custom Metadata records in tests,
+        // this will use the fallback to create default activities
+        List<Activity__c> activities = [SELECT Name, Activity_Sequence__c FROM Activity__c WHERE Facility_Case__c = :testFacility.Id ORDER BY Activity_Sequence__c];
+        System.assertNotEquals(0, activities.size(), 'Activities should have been created');
+    }
+    
+    /**
+     * Test error handling for createTwoActivities method
+     */
+    @isTest
+    static void testCreateTwoActivitiesError() {
+        Test.startTest();
+        
+        try {
+            // Try to create activities with null facility ID
+            FacilityCaseActivityController.createTwoActivities(null);
+            System.assert(false, 'Should have thrown an exception');
+        } catch (AuraHandledException e) {
+            // Expected exception
+            System.assert(e.getMessage().contains('Error creating activities'), 'Exception message should contain error information');
+        }
+        
+        Test.stopTest();
+    }
+    
+    /**
+     * Test error handling for createActivitiesFromMetadataEfficient method
+     */
+    @isTest
+    static void testCreateActivitiesFromMetadataEfficientError() {
+        Test.startTest();
+        
+        try {
+            // Try to create activities with null facility ID
+            FacilityCaseActivityController.createActivitiesFromMetadataEfficient(null, 'Term Loan');
+            System.assert(false, 'Should have thrown an exception');
+        } catch (AuraHandledException e) {
+            // Expected exception
+            System.assert(e.getMessage().contains('Error creating activities'), 'Exception message should contain error information');
+        }
+        
+        Test.stopTest();
+    }
+}
