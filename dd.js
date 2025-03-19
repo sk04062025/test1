@@ -57,13 +57,27 @@ export default class DrawdownValidator extends LightningElement {
     
     // Handle changes to the drawdown amount field
     handleDrawdownChange(event) {
-        this.drawdownAmount = event.detail.value;
+        const value = event.detail.value;
+        // If value is empty string, convert to null for proper validation
+        this.drawdownAmount = value === '' ? null : value;
+        // Validate on each keystroke to provide immediate feedback
         this.validateDrawdownAmount();
     }
     
     // Validate that the drawdown amount is not greater than the facility amount
     validateDrawdownAmount() {
-        if (this.drawdownAmount > this.facilityAmount) {
+        // Check for blank, null, or zero values
+        if (this.drawdownAmount === null || this.drawdownAmount === undefined || this.drawdownAmount === '' || parseFloat(this.drawdownAmount) === 0) {
+            this.showError = true;
+            this.errorMessage = 'Drawdown amount is required and cannot be blank or zero.';
+            return false;
+        }
+        
+        // Convert to numbers for comparison to ensure proper validation
+        const drawdownAmountNum = parseFloat(this.drawdownAmount);
+        const facilityAmountNum = parseFloat(this.facilityAmount);
+        
+        if (drawdownAmountNum > facilityAmountNum) {
             this.showError = true;
             this.errorMessage = 'Drawdown amount cannot exceed the facility amount.';
             return false;
