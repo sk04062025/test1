@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>58.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Drawdown Validator</masterLabel>
+    <description>Flow component to validate drawdown amount against facility amount for Lending Activity records</description>
+    <targets>
+        <target>lightning__FlowScreen</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__FlowScreen">
+            <property name="recordId" type="String" label="Lending Activity Record ID" description="ID of the Lending Activity record to validate"/>
+            <property name="caseRecordId" type="String" label="Case Record ID" description="ID of the related Case record (optional)"/>
+            <property name="availableActions" type="String[]" label="Available Actions" description="Available flow actions for navigation"/>
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>
