@@ -1,0 +1,26 @@
+# docker-compose.yml
+
+version: '3.8'
+
+services:
+  oauth2-proxy:
+    # Using a popular and well-maintained image for oauth2-proxy
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    container_name: oauth2-proxy
+    restart: unless-stopped
+    ports:
+      # The proxy will listen on port 4180 on your host machine
+      - "4180:4180"
+    volumes:
+      # Mount the configuration file from your host into the container
+      # This makes it easy to change the config without rebuilding the image
+      - ./oauth2-proxy.cfg:/etc/oauth2-proxy/oauth2-proxy.cfg
+    command:
+      # Tell oauth2-proxy where to find the configuration file inside the container
+      - '--config=/etc/oauth2-proxy/oauth2-proxy.cfg'
+    networks:
+      - my-app-network
+
+networks:
+  my-app-network:
+    driver: bridge
