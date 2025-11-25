@@ -1,0 +1,27 @@
+# In your app-config.yaml file at the root of your Backstage project
+
+# You should already have this integrations section
+integrations:
+  azure:
+    - host: your-azure-devops-hostname.com # <-- Make sure this is correct
+      credentials:
+        - personalAccessToken: ${AZURE_DEVOPS_TOKEN}
+
+catalog:
+  providers:
+    azureDevOps:
+      # This is your provider definition
+      azureID:
+        host: your-azure-devops-hostname.com # <-- Must match the host in the integrations section
+        organization: 'Your-Azure-DevOps-Organization'
+        project: 'Your-Project'
+        repository: 'your-repo'
+        path: '/catalog-info.yaml'
+        
+        # --- THIS IS THE MISSING PIECE ---
+        # Add the schedule block to tell the provider how often to run
+        schedule:
+          # Use an object for readability
+          frequency: { minutes: 30 }
+          timeout: { minutes: 3 }
+          initialDelay: { seconds: 15 } # Optional: waits a bit before the first run
