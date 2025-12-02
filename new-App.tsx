@@ -1,13 +1,15 @@
 // packages/app/src/App.tsx
 
 import React, { PropsWithChildren } from 'react';
-import { Route } from 'react-router';
+// --- 1. Import Navigate ---
+import { Route, Navigate } from 'react-router-dom';
 import { apis } from './apis';
 import { createApp } from '@backstage/app-defaults';
 import { AppRouter, FlatRoutes } from '@backstage/core-app-api';
 import { AlertDisplay, SignInPage, Progress } from '@backstage/core-components';
 import { useApi, identityApiRef } from '@backstage/core-plugin-api';
-import { Homepage } from './components/home/Homepage';
+// --- 2. Remove the Homepage import ---
+// import { Homepage } from './components/home/Homepage'; // <-- REMOVE THIS LINE
 import { Root } from './components/Root';
 
 // Import all your other page and plugin components here
@@ -30,29 +32,26 @@ const RequireSignIn = ({ children }: PropsWithChildren<{}>) => {
   const { status } = identityApi.getLoginStatus();
 
   if (status === 'PENDING') {
-    // Still loading, show a progress bar
     return <Progress />;
   }
 
   if (status === 'SIGNED_OUT') {
-    // The user is not signed in, render the SignInPage.
-    // It will automatically discover your configured OIDC provider.
     return <SignInPage />;
   }
 
-  // The user is signed in, render the actual application.
   return <>{children}</>;
 };
 
 const app = createApp({
   apis,
-  // Note: There is no 'components' override needed here.
 });
 
 // Define all your application routes here
 const routes = (
   <FlatRoutes>
-    <Route path="/" element={<Homepage />} />
+    {/* --- 3. Change the root route to redirect to the catalog --- */}
+    <Route path="/" element={<Navigate to="/catalog" />} />
+    
     <Route path="/catalog" element={<CatalogIndexPage />} />
     <Route
       path="/catalog/:namespace/:kind/:name"
@@ -70,7 +69,6 @@ export default app.createRoot(
   <>
     <AlertDisplay />
     <AppRouter>
-      {/* The Root component containing your routes is wrapped by RequireSignIn */}
       <RequireSignIn>
         <Root>{routes}</Root>
       </RequireSignIn>
