@@ -1,0 +1,17 @@
+auth:
+  environment: development
+  providers:
+    oidc:
+      development:
+        metadataUrl: <your-keycloak-url>/realms/<your-realm>/.well-known/openid-configuration
+        clientId: <your-keycloak-client-id>
+        clientSecret: <your-keycloak-client-secret>
+        # Scopes define the permissions your application is requesting.
+        scope: 'openid profile email'
+        # This is an example of a resolver that maps the OIDC user profile to a Backstage user identity.
+        # You may need to customize this based on your Keycloak setup and desired claims.
+        signIn:
+          resolver:
+            # This resolver will use the email claim from the OIDC token to look up the user in the Backstage catalog.
+            # Make sure your Keycloak instance is configured to provide the email claim.
+            emailMatchingUserEntityProfileEmail: {}
