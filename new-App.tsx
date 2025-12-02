@@ -1,13 +1,12 @@
 // packages/app/src/App.tsx
 
-// --- 1. Add useState and useEffect to the React import ---
 import React, { PropsWithChildren, useState, useEffect } from 'react';
 import { Route, Navigate } from 'react-router-dom';
 import { apis } from './apis';
 import { createApp } from '@backstage/app-defaults';
 import { AppRouter, FlatRoutes } from '@backstage/core-app-api';
 import { AlertDisplay, SignInPage, Progress } from '@backstage/core-components';
-import { useApi, identityApiRef } from '@backstage/core-plugin-api';
+import { useApi, identityApiRef, IdentityApi } from '@backstage/core-plugin-api'; // <-- IdentityApi is imported for the type
 import { Root } from './components/Root';
 
 // Import all your other page and plugin components here
@@ -26,11 +25,8 @@ const RequireSignIn = ({ children }: PropsWithChildren<{}>) => {
   const identityApi = useApi(identityApiRef);
 
   useEffect(() => {
-    // This function will be called once when the component mounts
     const checkLoginStatus = async () => {
       try {
-        // getBackstageIdentity() is an async method that resolves if the user
-        // is logged in, and rejects if they are not.
         await identityApi.getBackstageIdentity();
         setAuthStatus('signedIn');
       } catch (error) {
@@ -39,10 +35,10 @@ const RequireSignIn = ({ children }: PropsWithChildren<{}>) => {
     };
 
     checkLoginStatus();
-  }, [identityApi]); // The effect depends on the identityApi
+  }, [identityApi]);
 
   if (authStatus === 'loading') {
-    return <Progress />; // Show a loading indicator while we check
+    return <Progress />;
   }
 
   if (authStatus === 'signedOut') {
