@@ -46,7 +46,17 @@ const RequireSignIn = ({ children }: PropsWithChildren<{}>) => {
   }
 
   if (authStatus === 'signedOut') {
-    return <SignInPage />; // Show the sign-in page if logged out
+    // --- THIS IS THE CORRECTED LINE ---
+    // We provide the required 'onSignInSuccess' prop.
+    // When the user signs in, this function is called, which updates
+    // our state and causes the component to re-render.
+    return (
+      <SignInPage
+        onSignInSuccess={() => {
+          setAuthStatus('signedIn');
+        }}
+      />
+    );
   }
 
   return <>{children}</>; // Render the app if logged in
