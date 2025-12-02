@@ -1,15 +1,13 @@
 // packages/app/src/App.tsx
 
-import React, { PropsWithChildren } from 'react';
-// --- 1. Import Navigate ---
+// --- 1. Add useState and useEffect to the React import ---
+import React, { PropsWithChildren, useState, useEffect } from 'react';
 import { Route, Navigate } from 'react-router-dom';
 import { apis } from './apis';
 import { createApp } from '@backstage/app-defaults';
 import { AppRouter, FlatRoutes } from '@backstage/core-app-api';
 import { AlertDisplay, SignInPage, Progress } from '@backstage/core-components';
 import { useApi, identityApiRef } from '@backstage/core-plugin-api';
-// --- 2. Remove the Homepage import ---
-// import { Homepage } from './components/home/Homepage'; // <-- REMOVE THIS LINE
 import { Root } from './components/Root';
 
 // Import all your other page and plugin components here
@@ -17,41 +15,50 @@ import {
   CatalogEntityPage,
   CatalogIndexPage,
 } from '@backstage/plugin-catalog';
-import { CatalogImportPage } from '@backstage/plugin-catalog-import';
-import { ScaffolderPage } from '@backstage/plugin-scaffolder';
 // ... etc.
 
 /**
- * This component is a wrapper that checks if a user is signed in.
- * If they are not, it displays the SignInPage.
- * If the status is still loading, it shows a progress indicator.
- * Otherwise, it renders its children (the main app).
+ * This component is a wrapper that correctly performs an asynchronous check
+ * to see if a user is signed in.
  */
 const RequireSignIn = ({ children }: PropsWithChildren<{}>) => {
+  const [authStatus, setAuthStatus] = useState<'loading' | 'signedIn' | 'signedOut'>('loading');
   const identityApi = useApi(identityApiRef);
-  const { status } = identityApi.getLoginStatus();
 
-  if (status === 'PENDING') {
-    return <Progress />;
+  useEffect(() => {
+    // This function will be called once when the component mounts
+    const checkLoginStatus = async () => {
+      try {
+        // getBackstageIdentity() is an async method that resolves if the user
+        // is logged in, and rejects if they are not.
+        await identityApi.getBackstageIdentity();
+        setAuthStatus('signedIn');
+      } catch (error) {
+        setAuthStatus('signedOut');
+      }
+    };
+
+    checkLoginStatus();
+  }, [identityApi]); // The effect depends on the identityApi
+
+  if (authStatus === 'loading') {
+    return <Progress />; // Show a loading indicator while we check
   }
 
-  if (status === 'SIGNED_OUT') {
-    return <SignInPage />;
+  if (authStatus === 'signedOut') {
+    return <SignInPage />; // Show the sign-in page if logged out
   }
 
-  return <>{children}</>;
+  return <>{children}</>; // Render the app if logged in
 };
 
 const app = createApp({
   apis,
 });
 
-// Define all your application routes here
 const routes = (
   <FlatRoutes>
-    {/* --- 3. Change the root route to redirect to the catalog --- */}
     <Route path="/" element={<Navigate to="/catalog" />} />
-    
     <Route path="/catalog" element={<CatalogIndexPage />} />
     <Route
       path="/catalog/:namespace/:kind/:name"
@@ -59,8 +66,6 @@ const routes = (
     >
       {/* ... entityPage content */}
     </Route>
-    <Route path="/create" element={<ScaffolderPage />} />
-    <Route path="/catalog-import" element={<CatalogImportPage />} />
     {/* ... all your other routes */}
   </FlatRoutes>
 );
