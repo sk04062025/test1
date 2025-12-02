@@ -1,3 +1,13 @@
+app:
+  # ... other app configurations
+  signInPage:
+    providers:
+      - id: oidc  # <-- CHANGE THIS
+        title: Keycloak # You can keep the title user-friendly
+        message: Sign in with your Keycloak account
+        apiRef:
+          id: oidc # <-- AND CHANGE THIS
+
 auth:
   environment: development
   providers:
@@ -15,3 +25,5 @@ auth:
             # This resolver will use the email claim from the OIDC token to look up the user in the Backstage catalog.
             # Make sure your Keycloak instance is configured to provide the email claim.
             emailMatchingUserEntityProfileEmail: {}
+
+
