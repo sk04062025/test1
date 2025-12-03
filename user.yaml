@@ -1,0 +1,11 @@
+# users.yaml
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: oidc-user  # This can be anything (internal ID)
+spec:
+  profile:
+    displayName: OIDC User
+    email: your-email@example.com  # <--- CRITICAL: Must match your OIDC Login email
+    picture: https://avatars.dicebear.com/api/avataaars/oidc-user.svg
+  memberOf: [group:default/guests] # Adds you to the default guests group
