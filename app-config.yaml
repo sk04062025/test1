@@ -1,0 +1,10 @@
+catalog:
+  rules:
+    - allow: [Component, System, API, Resource, Location, Template, User, Group] # Ensure User/Group are allowed
+
+  locations:
+    # ... existing locations ...
+
+    # Add this new entry:
+    - type: file
+      target: ./users.yaml
