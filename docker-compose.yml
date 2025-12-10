@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  backstage:
+    container_name: backstage-app
+    build:
+      context: .
+      # Points to the Dockerfile we fixed earlier
+      dockerfile: packages/backend/Dockerfile
+    restart: always
+    
+    environment:
+      # 1. Set Node to Production mode
+      - NODE_ENV=production
+
+      # 2. Custom CA Certificate Configuration
+      # This tells Node.js to trust the certificate mounted in volumes
+      - NODE_EXTRA_CA_CERTS=/app/certs/rootCA.pem
+
+      # 3. Secrets (Load from .env file)
+      # Ensure your app-config.yaml uses ${KEYCLOAK_CLIENT_SECRET}
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+      
+      # Optional: PostgreSQL settings (if you move away from SQLite)
+      # - POSTGRES_HOST=postgres
+      # - POSTGRES_PORT=5432
+      # - POSTGRES_USER=backstage
+      # - POSTGRES_PASSWORD=secret
+
+    ports:
+      # Expose port 7007 so your Nginx container (or host) can reach it
+      - "7007:7007"
+
+    volumes:
+      # 1. Mount the Configuration File
+      # Allows you to edit config without rebuilding the image
+      - ./app-config.yaml:/app/app-config.yaml
+
+      # 2. Mount the Certificates
+      # Maps your host's ./certs folder to /app/certs inside container
+      - ./certs:/app/certs
+
+      # 3. Persist SQLite Data
+      # IMPORTANT: If you don't mount this, you lose data on every restart.
+      # Ensure an empty file named 'backstage.db' exists on host first if Docker complains.
+      - ./backstage.db:/app/backstage.db
+
+    # Use a specific network so Nginx can find this container by name
+    networks:
+      - backstage-net
+
+# Define the network
+networks:
+  backstage-net:
+    name: backstage-network
