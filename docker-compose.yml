@@ -1,0 +1,38 @@
+FROM python:3.11-slim
+
+# 1. Install system dependencies required for the ODBC driver and pyodbc
+#    - curl & gnupg: to download and install the Microsoft signing keys
+#    - unixodbc-dev: development headers for pyodbc
+#    - build-essential: (optional) often needed to compile pyodbc wheel
+RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
+    unixodbc-dev \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Add the Microsoft repository GPG key and the repository itself
+#    (Using Debian 12 'bookworm' repository)
+RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg \
+    && curl https://packages.microsoft.com/config/debian/12/prod.list > /etc/apt/sources.list.d/mssql-release.list
+
+# 3. Install the ODBC Driver 18 for SQL Server
+#    - ACCEPT_EULA=Y is required to auto-accept the license
+RUN apt-get update && ACCEPT_EULA=Y apt-get install -y \
+    msodbcsql18 \
+    # Optional: mssql-tools18 if you need sqlcmd/bcp
+    && rm -rf /var/lib/apt/lists/*
+
+# 4. Set the working directory
+WORKDIR /app
+
+# 5. Copy requirements and install Python packages
+#    (Ensure pyodbc or sqlalchemy is in your requirements.txt)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 6. Copy the rest of your application code
+COPY . .
+
+# 7. Run your application
+CMD ["python", "app.py"]
