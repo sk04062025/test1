@@ -1,0 +1,25 @@
+Using skopeo (CLI-based)
+If you prefer the command line or have hundreds of repositories and want to automate the logic via script, Skopeo is the best tool. Unlike Docker, Skopeo does not require a local daemon and doesn't need to "pull" the image to disk—it copies layers directly between registries.
+
+skopeo copy --all \
+  docker://docker.io/your-org/image:tag \
+  docker://harbor.yourdomain.com/your-project/image:tag
+
+
+#for login to docker repositories using skopeo
+
+skopeo login docker.io -u your_user -p your_PAT
+skopeo login harbor.domain.com -u harbor_user -p harbor_pw --tls-verify=false
+# Then run the copy command WITHOUT the --creds flags
+
+# to list tags for docker image
+skopeo list-tags --creds "your_docker_user:your_PAT" docker://docker.io/your_org/your_repo
+
+
+# Pro-Tip: Handling SSL
+If your Harbor VM uses a self-signed certificate or a private CA that isn't in your system's trust store, you might get a "certificate signed by unknown authority" error. In that case, simply add the following flag to the skopeo copy command:
+--dest-tls-verify=false
+
+# Requirements
+jq: Used to parse the JSON output of the tag list. (Install via sudo apt install jq or yum install jq).
+Skopeo Login: Ensure you have run skopeo login docker.io and skopeo login harbor.domain.com before running the script.
