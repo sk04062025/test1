@@ -39,73 +39,71 @@ myorg/database;shared-services;postgres-custom
 
 # --- CONFIGURATION ---
 HARBOR_DOMAIN="harbor.domain.com" 
-VERIFY_TLS="false" # Set to "true" if Harbor has a valid public CA cert
+VERIFY_TLS="false" 
 
 # --- USAGE CHECK ---
 usage() {
     echo "Usage: $0 <input_file>"
-    echo "Format of input file (semicolon separated):"
-    echo "  dockerhub_image;harbor_project;harbor_image"
-    echo ""
-    echo "Example file content:"
-    echo "  myorg/nginx;my-project;web-server"
+    echo "Format: dockerhub_image;harbor_project;harbor_image"
     exit 1
 }
 
-# Check if file argument is provided
-if [ "$#" -ne 1 ]; then
-    usage
-fi
+if [ "$#" -ne 1 ]; then usage; fi
 
 INPUT_FILE=$1
-
-# Check if file exists
 if [ ! -f "$INPUT_FILE" ]; then
     echo "Error: File '$INPUT_FILE' not found."
     exit 1
 fi
 
-# Check if 'jq' is installed
+# Check for jq
 if ! command -v jq &> /dev/null; then
     echo "Error: 'jq' is not installed."
     exit 1
 fi
 
-# --- START PROCESSING FILE ---
+# --- START PROCESSING ---
 
-# Loop through each line in the file
-# IFS=';' tells read to split by semicolon
-while IFS=';' read -r SOURCE_IMAGE HARBOR_PROJECT DEST_NAME || [ -n "$SOURCE_IMAGE" ]; do
+# Read the file line by line
+while IFS=';' read -r col1 col2 col3 || [ -n "$col1" ]; do
     
-    # Skip empty lines or lines starting with #
-    [[ -z "$SOURCE_IMAGE" || "$SOURCE_IMAGE" == #* ]] && continue
+    # 1. Clean the inputs (remove carriage returns and extra spaces)
+    SOURCE_IMAGE=$(echo "$col1" | tr -d '\r' | xargs)
+    HARBOR_PROJECT=$(echo "$col2" | tr -d '\r' | xargs)
+    DEST_NAME=$(echo "$col3" | tr -d '\r' | xargs)
 
-    # Trim potential whitespace or carriage returns (common in Windows-edited files)
-    SOURCE_IMAGE=$(echo "$SOURCE_IMAGE" | tr -d '\r' | xargs)
-    HARBOR_PROJECT=$(echo "$HARBOR_PROJECT" | tr -d '\r' | xargs)
-    DEST_NAME=$(echo "$DEST_NAME" | tr -d '\r' | xargs)
+    # 2. Skip empty lines or comment lines (starting with #)
+    case "$SOURCE_IMAGE" in
+        "" | \#*) 
+            continue 
+            ;;
+    esac
+
+    # 3. Validate that we have all three parts
+    if [ -z "$HARBOR_PROJECT" ] || [ -z "$DEST_NAME" ]; then
+        echo "[ERROR] Invalid line format: $col1;$col2;$col3"
+        continue
+    fi
 
     echo "========================================================"
     echo "PROCESSING: $SOURCE_IMAGE"
     echo "TARGET:     $HARBOR_DOMAIN/$HARBOR_PROJECT/$DEST_NAME"
     echo "========================================================"
 
-    # 1. Fetch tags from Docker Hub
+    # 4. Fetch tags
     TAG_LIST=$(skopeo list-tags docker://docker.io/$SOURCE_IMAGE 2>/dev/null)
-
     if [ $? -ne 0 ]; then
-        echo "[SKIP] Could not fetch tags for $SOURCE_IMAGE. Check login or repo name."
+        echo "[SKIP] Could not fetch tags for $SOURCE_IMAGE. Check login/repo name."
         continue
     fi
 
     TAGS=$(echo "$TAG_LIST" | jq -r '.Tags[]')
-
-    if [ -z "$TAGS" ]; then
+    if [ -z "$TAGS" ] || [ "$TAGS" == "null" ]; then
         echo "[SKIP] No tags found for $SOURCE_IMAGE."
         continue
     fi
 
-    # 2. Loop through tags for this specific image
+    # 5. Copy tags
     for TAG in $TAGS; do
         echo "  --> Copying Tag: $TAG"
         
@@ -120,15 +118,11 @@ while IFS=';' read -r SOURCE_IMAGE HARBOR_PROJECT DEST_NAME || [ -n "$SOURCE_IMA
             echo "      [FAIL] Failed to copy $TAG"
         fi
     done
-
-    echo "Finished processing $SOURCE_IMAGE"
     echo ""
 
 done < "$INPUT_FILE"
 
-echo "========================================================"
-echo "All images in $INPUT_FILE have been processed."
-
+echo "Migration Complete."
 #########################################################################################
 
 How to use it:
