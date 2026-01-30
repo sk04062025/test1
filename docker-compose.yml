@@ -1,0 +1,11 @@
+services:
+  sdp-mcp:
+    build: .
+    container_name: sdp-mcp-server
+    ports:
+      - "8000:8000"
+    environment:
+      - SDP_URL=http://192.168.1.50:8080  # Replace with your actual SDP Server IP/URL
+      - SDP_API_KEY=YOUR_KEY_HERE        # Replace with your API Key
+      - VERIFY_SSL=false                 # Set to true if using valid HTTPS
+    restart: unless-stopped
