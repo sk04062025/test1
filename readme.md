@@ -13,3 +13,11 @@ Add the following configuration:
     }
   }
 }
+
+
+
+sdp-mcp/
+├── sdp_mcp.py
+├── requirements.txt
+├── Dockerfile
+└── docker-compose.yml
