@@ -21,3 +21,16 @@ sdp-mcp/
 ├── requirements.txt
 ├── Dockerfile
 └── docker-compose.yml
+
+```
+{
+  "mcpServers": {
+    "servicedesk-plus": {
+      "url": "http://localhost:8000/sse",
+      "type": "sse",
+      "disabled": false,
+      "alwaysAllow": []
+    }
+  }
+}
+```
